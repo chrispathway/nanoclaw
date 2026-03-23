@@ -52,6 +52,11 @@ export class WhatsAppChannel implements Channel {
   }
 
   async connect(): Promise<void> {
+    const credsPath = path.join(STORE_DIR, 'auth', 'creds.json');
+    if (!fs.existsSync(credsPath)) {
+      logger.info('WhatsApp: no auth credentials found, skipping connection');
+      return;
+    }
     return new Promise<void>((resolve, reject) => {
       this.connectInternal(resolve).catch(reject);
     });
