@@ -27,13 +27,17 @@ Immediately move to trash (no notification needed):
 
 ### Email Reports
 
-When Christian asks for an email overview or when notifying about new emails, format each one as:
+After reading any email, always mark it as unread again so Christian keeps his overview.
+
+When surfacing emails, batch them in groups of 3. For each, include:
 
 **From:** [sender name / company]
 **Subject:** [subject]
-**Summary:** [1-2 sentences — what they want, what they're offering]
+**Summary:** [1 sentence — who they are, what they want, fit: yes/no]
 
-Group collaboration requests together. Skip newsletters, receipts, and automated emails in the summary unless asked.
+Skip DMARC reports, spam, newsletters, ads, and automated notifications entirely — do not include these in summaries.
+
+Exception: emails from current or recent partners are urgent — summarize those immediately, not in a batch.
 
 ### Collaboration Request Handling
 

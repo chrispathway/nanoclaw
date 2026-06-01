@@ -99,7 +99,7 @@ After creating the draft, tell Christian: which email it was for, that the draft
 
 ### Negotiation & Pricing Strategy
 
-The prices in the template ($6,000 / $8,000) are the opening offer — intentional anchoring, since brands rarely accept the first number. The target close is around $4,000 per video; $3,000 is the floor and still acceptable if needed.
+The prices in the template ($6,000 / $8,000 / $12,000) are the opening offer — intentional anchoring, since brands rarely accept the first number. The target close is around $5,000 per video; $4,500 is the floor and still acceptable if needed.
 
 When drafting any follow-up or negotiation reply, keep this in mind and draft accordingly.
 
