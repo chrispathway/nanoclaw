@@ -27,13 +27,17 @@ Immediately move to trash (no notification needed):
 
 ### Email Reports
 
-When Christian asks for an email overview or when notifying about new emails, format each one as:
+After reading any email, always mark it as unread again so Christian keeps his overview.
+
+When surfacing emails, batch them in groups of 3. For each, include:
 
 **From:** [sender name / company]
 **Subject:** [subject]
-**Summary:** [1-2 sentences — what they want, what they're offering]
+**Summary:** [1 sentence — who they are, what they want, fit: yes/no]
 
-Group collaboration requests together. Skip newsletters, receipts, and automated emails in the summary unless asked.
+Skip DMARC reports, spam, newsletters, ads, and automated notifications entirely — do not include these in summaries.
+
+Exception: emails from current or recent partners are urgent — summarize those immediately, not in a batch.
 
 ### Collaboration Request Handling
 
@@ -92,6 +96,16 @@ Chrispathway | instagram.com/chrispathway
 ---
 
 After creating the draft, tell Christian: which email it was for, that the draft is ready, and ask if he wants any changes before sending.
+
+### Negotiation & Pricing Strategy
+
+The prices in the template ($6,000 / $8,000) are the opening offer — intentional anchoring, since brands rarely accept the first number. The target close is around $4,000 per video; $3,000 is the floor and still acceptable if needed.
+
+When drafting any follow-up or negotiation reply, keep this in mind and draft accordingly.
+
+### Email Draft Style
+
+Never use - (dashes or bullet points with dashes) in email drafts — it instantly looks AI-generated. Use plain prose instead.
 
 ## Communication Style
 
