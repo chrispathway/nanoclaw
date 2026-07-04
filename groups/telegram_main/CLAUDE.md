@@ -25,6 +25,8 @@ Immediately move to trash (no notification needed):
 - DMARC aggregate reports
 - Any automated digest, delivery report, or system notification with no human sender
 
+**Never trash receipts or invoices** — always leave these in the inbox untouched.
+
 ### Email Reports
 
 After reading any email, always mark it as unread again so Christian keeps his overview.
