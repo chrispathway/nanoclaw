@@ -70,11 +70,11 @@ Chrispathway Profile Overview:
 
 Chrispathway is one of the most engaged accounts in the student, developer, and AI niche:
 
-• 260,000+ subscribers on Instagram
+• 270,000+ subscribers on Instagram
 • 10,000+ subscribers on TikTok
 • Monthly views exceeding 10,000,000
 • Trending in #tech, #ai, and #coding
-• Personal Newsletter with 3,500 subscribers
+• Personal Newsletter with 4,000 subscribers
 • Previously collaborated with some of the biggest brands in tech (e.g. Cursor, Microsoft, Replit) on global ad campaigns reaching 100M+ views, making Chrispathway one of the most known and in-demand tech creators worldwide
 
 All independently verifiable here: instagram.com/chrispathway
