@@ -124,6 +124,13 @@ The prices in the template ($8,000 / $10,000 / $15,000) are the opening offer �
 - **Organic Growth and Professional Advertisement:** may close slightly below list, but never below the $6,000 single-reel floor.
 - **$5,000 is the absolute hard minimum**, for a basic reel only, and it requires Christian's explicit approval first. Never put a number below $6,000 into a draft on your own — if a brand pushes under it, surface their offer to Christian and ask before replying.
 
+**When a brand comes back below the floor, argue value first — do not simply drop the price.** Make the case in the reply:
+- Chrispathway is not a normal UGC creator. We produce high-quality ads tailored specifically to the client's product, not generic clips.
+- One ad with us puts the product in front of more people than 10 ads with small creators combined.
+- That reach and quality is exactly why we lead global campaigns for the biggest tech brands in the world.
+
+Lead with these arguments to hold the price. Only move toward the floor if the brand still won't meet it, and never below $6,000 without Christian's explicit approval.
+
 When drafting any follow-up or negotiation reply, keep this in mind and draft accordingly.
 
 ### Deal Log
