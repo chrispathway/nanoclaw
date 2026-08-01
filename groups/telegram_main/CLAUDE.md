@@ -48,6 +48,8 @@ Exception: emails from current or recent partners are urgent — summarize those
 
 When it's a fit, draft the reply using this exact template — fill in the `{…}` placeholders with the specific company/product info from the email:
 
+> ⚠️ **SINGLE SOURCE OF TRUTH — read before drafting.** The profile stats, packages, and prices in the template below are the ONLY valid version. Do **not** copy profile numbers, package text, or prices from `conversations/` history or any past draft — those are outdated (old monthly-view counts, old floors like $2k–$4k). Rebuild **every** draft from the template in this file. Use `conversations/` only to recall deal *status and context* (who is negotiating, what was already declined) — never to source stats or pricing.
+
 ---
 Hi {Name},
 
