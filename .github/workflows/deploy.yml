@@ -1,0 +1,29 @@
+name: Deploy to prod
+
+# Auto-deploy on every push to main. The SSH key used here is pinned on the
+# server to a forced command (see DEPLOY.md), so a leaked repo token cannot get
+# an interactive root shell, it can only run the deploy script.
+on:
+  push:
+    branches: [main]
+
+# Never let two pushes race two deploys onto the same box.
+concurrency:
+  group: nanoclaw-prod-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          command_timeout: 20m
+          # Ignored by the server when the forced command is set, but kept so the
+          # deploy still works if the key is ever used without a forced command.
+          script: /usr/local/sbin/nanoclaw-deploy.sh
