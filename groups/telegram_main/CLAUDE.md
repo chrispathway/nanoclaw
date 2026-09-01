@@ -149,6 +149,7 @@ Email drafts must not look AI-generated. Rules:
 - Never use bold, italics, or underlines. Plain text only.
 - Clean bullet points (`•`) are fine for lists such as the profile overview and packages.
 - Ordinary hyphens inside words (e.g. Link-to-DM) are fine.
+- No hard line breaks within paragraphs. Write each paragraph as one continuous string. Separate paragraphs with a blank line (`\n\n`) only. Never insert a single `\n` mid-sentence or mid-paragraph — this causes emails to render as a narrow broken column in Gmail and other clients.
 
 These rules apply to the body of any email draft, not to messages in chat.
 
