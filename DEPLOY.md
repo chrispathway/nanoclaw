@@ -44,6 +44,10 @@ git revert <bad-sha> && git push origin main
 2. `/usr/local/sbin/nanoclaw-deploy.sh` = the wrapper in `scripts/prod-deploy-wrapper.sh`, installed root:root 0700.
 3. GitHub repo secrets: `DEPLOY_HOST=178.104.67.7`, `DEPLOY_USER=root`, `DEPLOY_SSH_KEY=<private key>`.
 
+## life-context credential (rotated 2026-09-01)
+
+Fine-grained PAT `nanoclaw-life-context-prod`, scoped to `chrispathway/life-context`, Contents read/write, expires **2027-09-01**. No token in `.git/config` anymore; it lives in `.git/nanoclaw-credentials` (0600 `nanoclaw:nanoclaw`) behind a git credential helper whose path resolves at runtime, so the same bind-mounted `.git/config` works from both the container path (`/workspace/extra/life-context`) and the host path (`/home/nanoclaw/life-context`).
+
 ## Open items
 
-- Rotate the `life-context` GitHub PAT (currently plaintext in `.git/config` and `/root/.life-context-pat`) and move it to a git credential helper.
+- Rotate `nanoclaw-life-context-prod` before it expires **2027-09-01** (reminder set for mid-Aug 2027).
