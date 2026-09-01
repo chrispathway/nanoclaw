@@ -14,6 +14,10 @@ import { CronExpressionParser } from 'cron-parser';
 const IPC_DIR = '/workspace/ipc';
 const MESSAGES_DIR = path.join(IPC_DIR, 'messages');
 const TASKS_DIR = path.join(IPC_DIR, 'tasks');
+const GMAIL_DIR = path.join(IPC_DIR, 'gmail');
+const GMAIL_RESPONSES_DIR = path.join(GMAIL_DIR, 'responses');
+const GMAIL_POLL_MS = 300;
+const GMAIL_TIMEOUT_MS = 60000;
 
 // Context from environment variables (set by the agent runner)
 const chatJid = process.env.NANOCLAW_CHAT_JID!;
@@ -329,6 +333,90 @@ Use available_groups.json to find the JID for a group. The folder name must be c
 
     return {
       content: [{ type: 'text' as const, text: `Group "${args.name}" registered. It will start receiving messages immediately.` }],
+    };
+  },
+);
+
+/**
+ * Wait for the host to answer a Gmail IPC request.
+ * Unlike the other lanes this one is request/response, so the agent gets the
+ * draft id back (or the reason it failed) instead of a blind "queued".
+ */
+async function waitForGmailResponse(requestId: string): Promise<{ ok: boolean; error?: string; [key: string]: unknown }> {
+  const responsePath = path.join(GMAIL_RESPONSES_DIR, `${requestId}.json`);
+  const deadline = Date.now() + GMAIL_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    if (fs.existsSync(responsePath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(responsePath, 'utf-8'));
+        fs.unlinkSync(responsePath);
+        return data;
+      } catch {
+        // Partially written; retry on the next tick.
+      }
+    }
+    await new Promise(r => setTimeout(r, GMAIL_POLL_MS));
+  }
+
+  return { ok: false, error: `Timed out after ${GMAIL_TIMEOUT_MS / 1000}s waiting for the host to create the draft.` };
+}
+
+server.tool(
+  'create_email_draft',
+  `Create a Gmail draft reply that threads into an existing conversation, exactly like hitting Reply in Gmail. Use this instead of mcp__gmail__create_draft for any reply.
+
+It sets threadId, In-Reply-To, References and a "Re: " subject from the live thread, so the draft appears inside the original conversation with the prior message visible, and it strips hard line breaks from inside paragraphs so Gmail renders the body full width.
+
+Pass thread_id (the "Thread ID" shown by read_email/search_emails) or message_id. Recipient and subject are taken from the thread; only override them when you have a specific reason.
+
+Write the body as plain paragraphs separated by a blank line. Do not hard-wrap lines inside a paragraph.`,
+  {
+    thread_id: z.string().optional().describe('Gmail thread ID of the conversation to reply to (preferred)'),
+    message_id: z.string().optional().describe('Gmail message ID; the thread is resolved from it. Use when you only have a message ID.'),
+    body: z.string().describe('Plain-text reply body. Paragraphs separated by a blank line, no hard wrapping inside a paragraph.'),
+    to: z.string().optional().describe('Override the recipient. Defaults to the Reply-To/From of the message being answered.'),
+    cc: z.string().optional().describe('Optional Cc recipients, comma separated.'),
+    subject: z.string().optional().describe('Override the subject. Defaults to the thread subject normalized to "Re: ...".'),
+  },
+  async (args) => {
+    if (!args.thread_id && !args.message_id) {
+      return {
+        content: [{ type: 'text' as const, text: 'Either thread_id or message_id is required.' }],
+        isError: true,
+      };
+    }
+
+    const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+    fs.mkdirSync(GMAIL_RESPONSES_DIR, { recursive: true });
+    writeIpcFile(GMAIL_DIR, {
+      type: 'create_email_draft',
+      requestId,
+      threadId: args.thread_id,
+      messageId: args.message_id,
+      body: args.body,
+      to: args.to,
+      cc: args.cc,
+      subject: args.subject,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+
+    const response = await waitForGmailResponse(requestId);
+
+    if (!response.ok) {
+      return {
+        content: [{ type: 'text' as const, text: `Failed to create draft: ${response.error || 'unknown error'}` }],
+        isError: true,
+      };
+    }
+
+    return {
+      content: [{
+        type: 'text' as const,
+        text: `Threaded draft created.\nDraft ID: ${response.draftId}\nThread ID: ${response.threadId}\nTo: ${response.to}\nSubject: ${response.subject}\nIn-Reply-To: ${response.inReplyTo}`,
+      }],
     };
   },
 );

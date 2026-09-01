@@ -5,6 +5,7 @@ import { CronExpressionParser } from 'cron-parser';
 
 import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
 import { AvailableGroup } from './container-runner.js';
+import { CreateDraftRequest, CreateDraftResult } from './gmail-draft.js';
 import { createTask, deleteTask, getTaskById, updateTask } from './db.js';
 import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
@@ -23,6 +24,7 @@ export interface IpcDeps {
     registeredJids: Set<string>,
   ) => void;
   onTasksChanged: () => void;
+  createEmailDraft: (req: CreateDraftRequest) => Promise<CreateDraftResult>;
 }
 
 let ipcWatcherRunning = false;
@@ -63,6 +65,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
       const isMain = folderIsMain.get(sourceGroup) === true;
       const messagesDir = path.join(ipcBaseDir, sourceGroup, 'messages');
       const tasksDir = path.join(ipcBaseDir, sourceGroup, 'tasks');
+      const gmailDir = path.join(ipcBaseDir, sourceGroup, 'gmail');
 
       // Process messages from this group's IPC directory
       try {
@@ -145,6 +148,10 @@ export function startIpcWatcher(deps: IpcDeps): void {
       } catch (err) {
         logger.error({ err, sourceGroup }, 'Error reading IPC tasks directory');
       }
+
+      // Process Gmail draft requests (request/response, unlike the
+      // fire-and-forget lanes above: the agent waits for the draft id).
+      await processGmailIpc(gmailDir, sourceGroup, isMain, deps);
     }
 
     setTimeout(processIpcFiles, IPC_POLL_INTERVAL);
@@ -457,5 +464,116 @@ export async function processTaskIpc(
 
     default:
       logger.warn({ type: data.type }, 'Unknown IPC task type');
+  }
+}
+
+const GMAIL_RESPONSE_TTL_MS = 10 * 60 * 1000;
+
+/**
+ * Handle Gmail draft requests written by the container's `create_email_draft`
+ * MCP tool. Unlike the message/task lanes this is request/response: the result
+ * (or error) is written to `gmail/responses/<requestId>.json`, which the tool
+ * polls for so the agent learns the draft id or the failure reason.
+ */
+async function processGmailIpc(
+  gmailDir: string,
+  sourceGroup: string,
+  isMain: boolean,
+  deps: IpcDeps,
+): Promise<void> {
+  if (!fs.existsSync(gmailDir)) return;
+
+  const responsesDir = path.join(gmailDir, 'responses');
+
+  const writeResponse = (requestId: string, payload: object) => {
+    fs.mkdirSync(responsesDir, { recursive: true });
+    const target = path.join(responsesDir, `${requestId}.json`);
+    const temp = `${target}.tmp`;
+    fs.writeFileSync(temp, JSON.stringify(payload));
+    fs.renameSync(temp, target);
+  };
+
+  try {
+    const files = fs.readdirSync(gmailDir).filter((f) => f.endsWith('.json'));
+
+    for (const file of files) {
+      const filePath = path.join(gmailDir, file);
+      let requestId = path.basename(file, '.json');
+
+      try {
+        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        fs.unlinkSync(filePath);
+        requestId = data.requestId || requestId;
+
+        if (data.type !== 'create_email_draft') {
+          writeResponse(requestId, {
+            ok: false,
+            error: `Unknown Gmail IPC type: ${data.type}`,
+          });
+          continue;
+        }
+
+        // Drafts are account-wide, so only the main group may create them.
+        if (!isMain) {
+          logger.warn(
+            { sourceGroup },
+            'Unauthorized create_email_draft attempt blocked',
+          );
+          writeResponse(requestId, {
+            ok: false,
+            error: 'Only the main group can create email drafts.',
+          });
+          continue;
+        }
+
+        const result = await deps.createEmailDraft({
+          threadId: data.threadId,
+          messageId: data.messageId,
+          body: data.body,
+          to: data.to,
+          cc: data.cc,
+          subject: data.subject,
+        });
+
+        writeResponse(requestId, { ok: true, ...result });
+        logger.info(
+          { sourceGroup, draftId: result.draftId, threadId: result.threadId },
+          'Gmail draft created via IPC',
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error(
+          { file, sourceGroup, err },
+          'Error processing Gmail draft IPC request',
+        );
+        try {
+          writeResponse(requestId, { ok: false, error: message });
+        } catch (writeErr) {
+          logger.error({ writeErr }, 'Failed to write Gmail IPC response');
+        }
+        try {
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch {
+          /* already gone */
+        }
+      }
+    }
+
+    // Sweep responses the container never picked up (timed-out tool calls).
+    if (fs.existsSync(responsesDir)) {
+      const now = Date.now();
+      for (const file of fs.readdirSync(responsesDir)) {
+        const filePath = path.join(responsesDir, file);
+        try {
+          if (now - fs.statSync(filePath).mtimeMs > GMAIL_RESPONSE_TTL_MS) {
+            fs.unlinkSync(filePath);
+          }
+        } catch {
+          /* raced with the container reading it */
+        }
+      }
+    }
+  } catch (err) {
+    logger.error({ err, sourceGroup }, 'Error reading IPC gmail directory');
   }
 }

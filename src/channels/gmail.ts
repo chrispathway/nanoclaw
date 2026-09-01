@@ -1,11 +1,8 @@
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-
-import { google, gmail_v1 } from 'googleapis';
+import { gmail_v1 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 
 // isMain flag is used instead of MAIN_GROUP_FOLDER constant
+import { createGmailClient, hasGmailCredentials } from '../gmail-auth.js';
 import { logger } from '../logger.js';
 import { registerChannel, ChannelOpts } from './registry.js';
 import {
@@ -47,42 +44,17 @@ export class GmailChannel implements Channel {
   }
 
   async connect(): Promise<void> {
-    const credDir = path.join(os.homedir(), '.gmail-mcp');
-    const keysPath = path.join(credDir, 'gcp-oauth.keys.json');
-    const tokensPath = path.join(credDir, 'credentials.json');
+    const client = createGmailClient();
 
-    if (!fs.existsSync(keysPath) || !fs.existsSync(tokensPath)) {
+    if (!client) {
       logger.warn(
         'Gmail credentials not found in ~/.gmail-mcp/. Skipping Gmail channel. Run /add-gmail to set up.',
       );
       return;
     }
 
-    const keys = JSON.parse(fs.readFileSync(keysPath, 'utf-8'));
-    const tokens = JSON.parse(fs.readFileSync(tokensPath, 'utf-8'));
-
-    const clientConfig = keys.installed || keys.web || keys;
-    const { client_id, client_secret, redirect_uris } = clientConfig;
-    this.oauth2Client = new google.auth.OAuth2(
-      client_id,
-      client_secret,
-      redirect_uris?.[0],
-    );
-    this.oauth2Client.setCredentials(tokens);
-
-    // Persist refreshed tokens
-    this.oauth2Client.on('tokens', (newTokens) => {
-      try {
-        const current = JSON.parse(fs.readFileSync(tokensPath, 'utf-8'));
-        Object.assign(current, newTokens);
-        fs.writeFileSync(tokensPath, JSON.stringify(current, null, 2));
-        logger.debug('Gmail OAuth tokens refreshed');
-      } catch (err) {
-        logger.warn({ err }, 'Failed to persist refreshed Gmail tokens');
-      }
-    });
-
-    this.gmail = google.gmail({ version: 'v1', auth: this.oauth2Client });
+    this.oauth2Client = client.oauth2Client;
+    this.gmail = client.gmail;
 
     // Verify connection
     const profile = await this.gmail.users.getProfile({ userId: 'me' });
@@ -352,11 +324,7 @@ export class GmailChannel implements Channel {
 }
 
 registerChannel('gmail', (opts: ChannelOpts) => {
-  const credDir = path.join(os.homedir(), '.gmail-mcp');
-  if (
-    !fs.existsSync(path.join(credDir, 'gcp-oauth.keys.json')) ||
-    !fs.existsSync(path.join(credDir, 'credentials.json'))
-  ) {
+  if (!hasGmailCredentials()) {
     logger.warn('Gmail: credentials not found in ~/.gmail-mcp/');
     return null;
   }

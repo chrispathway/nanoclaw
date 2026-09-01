@@ -53,6 +53,13 @@ beforeEach(() => {
 
   deps = {
     sendMessage: async () => {},
+    createEmailDraft: async () => ({
+      draftId: 'draft-1',
+      threadId: 'thread-1',
+      to: 'someone@example.com',
+      subject: 'Re: test',
+      inReplyTo: '<abc@example.com>',
+    }),
     registeredGroups: () => groups,
     registerGroup: (jid, group) => {
       groups[jid] = group;
