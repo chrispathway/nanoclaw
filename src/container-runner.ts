@@ -3,6 +3,7 @@
  * Spawns agent execution in containers and handles IPC
  */
 import { ChildProcess, exec, spawn } from 'child_process';
+import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -55,6 +56,135 @@ interface VolumeMount {
   hostPath: string;
   containerPath: string;
   readonly: boolean;
+}
+
+/**
+ * Keep a group's writable copy of the agent-runner sources in step with the
+ * repo, without discarding per-group customizations.
+ *
+ * The copy is bind-mounted over /app/src, so a stale copy silently shadows any
+ * new tool shipped in container/agent-runner/. We therefore re-sync every file
+ * the group has not edited, tracked by a hash manifest written next to the
+ * copy. A file the group HAS edited is left alone and logged. On the first run
+ * for an existing copy there is no manifest, so an out-of-date file is backed
+ * up next to itself before being refreshed.
+ */
+export function syncGroupAgentRunnerSrc(
+  srcDir: string,
+  destDir: string,
+  groupFolder: string,
+): void {
+  const manifestPath = `${destDir}.sync.json`;
+
+  if (!fs.existsSync(destDir)) {
+    fs.cpSync(srcDir, destDir, { recursive: true });
+    writeAgentRunnerManifest(srcDir, destDir, manifestPath);
+    return;
+  }
+
+  let manifest: Record<string, string> = {};
+  try {
+    if (fs.existsSync(manifestPath)) {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    }
+  } catch (err) {
+    logger.warn(
+      { err, groupFolder },
+      'Unreadable agent-runner sync manifest, treating copy as unmanaged',
+    );
+  }
+
+  const hasManifest = Object.keys(manifest).length > 0;
+  let changed = false;
+
+  for (const relPath of listFilesRecursive(srcDir)) {
+    const srcPath = path.join(srcDir, relPath);
+    const destPath = path.join(destDir, relPath);
+    const srcHash = hashFile(srcPath);
+    const destHash = fs.existsSync(destPath) ? hashFile(destPath) : null;
+
+    if (destHash === srcHash) {
+      if (manifest[relPath] !== srcHash) {
+        manifest[relPath] = srcHash;
+        changed = true;
+      }
+      continue;
+    }
+
+    // Locally customized: the group edited it since the last sync. Leave it.
+    if (hasManifest && manifest[relPath] && manifest[relPath] !== destHash) {
+      logger.warn(
+        { groupFolder, file: relPath },
+        'Group customized this agent-runner file, skipping sync',
+      );
+      continue;
+    }
+
+    if (destHash !== null && !hasManifest) {
+      const backup = `${destPath}.pre-sync-${Date.now()}`;
+      fs.copyFileSync(destPath, backup);
+      logger.info(
+        { groupFolder, file: relPath, backup },
+        'Refreshing unmanaged agent-runner file, previous version backed up',
+      );
+    }
+
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.copyFileSync(srcPath, destPath);
+    manifest[relPath] = srcHash;
+    changed = true;
+    logger.info(
+      { groupFolder, file: relPath },
+      'Synced agent-runner file into group copy',
+    );
+  }
+
+  if (changed) {
+    try {
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    } catch (err) {
+      logger.warn(
+        { err, groupFolder },
+        'Failed to write agent-runner manifest',
+      );
+    }
+  }
+}
+
+function writeAgentRunnerManifest(
+  srcDir: string,
+  destDir: string,
+  manifestPath: string,
+): void {
+  const manifest: Record<string, string> = {};
+  for (const relPath of listFilesRecursive(srcDir)) {
+    manifest[relPath] = hashFile(path.join(destDir, relPath));
+  }
+  try {
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+  } catch (err) {
+    logger.warn({ err }, 'Failed to write agent-runner manifest');
+  }
+}
+
+function listFilesRecursive(dir: string, prefix = ''): string[] {
+  const out: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = prefix ? path.join(prefix, entry.name) : entry.name;
+    if (entry.isDirectory()) {
+      out.push(...listFilesRecursive(path.join(dir, entry.name), rel));
+    } else if (entry.isFile()) {
+      out.push(rel);
+    }
+  }
+  return out;
+}
+
+function hashFile(filePath: string): string {
+  return crypto
+    .createHash('sha256')
+    .update(fs.readFileSync(filePath))
+    .digest('hex');
 }
 
 function buildVolumeMounts(
@@ -190,9 +320,11 @@ function buildVolumeMounts(
     readonly: false,
   });
 
-  // Copy agent-runner source into a per-group writable location so agents
-  // can customize it (add tools, change behavior) without affecting other
-  // groups. Recompiled on container startup via entrypoint.sh.
+  // Keep a per-group writable copy of the agent-runner source so agents can
+  // customize it (add tools, change behavior) without affecting other groups.
+  // Files the group has not edited are re-synced from the repo, so shipped
+  // changes actually reach the container. Recompiled on container startup via
+  // entrypoint.sh.
   const agentRunnerSrc = path.join(
     projectRoot,
     'container',
@@ -205,8 +337,8 @@ function buildVolumeMounts(
     group.folder,
     'agent-runner-src',
   );
-  if (!fs.existsSync(groupAgentRunnerDir) && fs.existsSync(agentRunnerSrc)) {
-    fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
+  if (fs.existsSync(agentRunnerSrc)) {
+    syncGroupAgentRunnerSrc(agentRunnerSrc, groupAgentRunnerDir, group.folder);
   }
   mounts.push({
     hostPath: groupAgentRunnerDir,
