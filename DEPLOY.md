@@ -4,7 +4,7 @@ Push-to-deploy for the prod email agent. **You never SSH in to ship a change.** 
 
 ## How it runs (prod)
 
-- Host: `178.104.67.7` (Hetzner, `ssh nanoclaw` alias, root login, key `~/.ssh/hetzner_nanoclaw`).
+- Host: `<DEPLOY_HOST, see life-context reference/infra-nanoclaw.md>` (Hetzner, `ssh nanoclaw` alias, root login, key `~/.ssh/hetzner_nanoclaw`).
 - The app is a **systemd** unit `nanoclaw.service` running as the unprivileged `nanoclaw` user: `node /home/nanoclaw/nanoclaw/dist/index.js`, `Restart=always`, TZ Europe/Berlin.
 - Per agent turn the Node supervisor shells out to `docker run` (image `nanoclaw-agent:latest`, ephemeral `nanoclaw-*` containers). The repo is mounted **read-only** into the container; the group dir and `life-context` are read-write.
 - `dist/` is **gitignored and built on the box** (`npm run build` = tsc). `groups/*/CLAUDE.md` memory is **read live** each turn.
@@ -42,7 +42,7 @@ git revert <bad-sha> && git push origin main
 1. Dedicated deploy key `~/.ssh/gha_nanoclaw_deploy`, public half in root's `authorized_keys` on the box, pinned to a forced command:
    `command="/usr/local/sbin/nanoclaw-deploy.sh",restrict ssh-ed25519 AAAA... gha-deploy`
 2. `/usr/local/sbin/nanoclaw-deploy.sh` = the wrapper in `scripts/prod-deploy-wrapper.sh`, installed root:root 0700.
-3. GitHub repo secrets: `DEPLOY_HOST=178.104.67.7`, `DEPLOY_USER=root`, `DEPLOY_SSH_KEY=<private key>`.
+3. GitHub repo secrets: `DEPLOY_HOST=<DEPLOY_HOST, see life-context reference/infra-nanoclaw.md>`, `DEPLOY_USER=root`, `DEPLOY_SSH_KEY=<private key>`.
 
 ## life-context credential (rotated 2026-09-01)
 
