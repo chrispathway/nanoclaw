@@ -417,6 +417,14 @@ async function runQuery(
         'mcp__gmail__delete_draft',
         'mcp__gmail__list_drafts',
         'mcp__gmail__get_draft',
+        // Label/trash management. Deliberately NOT allowed:
+        //   send_email        -> Christian's rule is drafts only, enforced at tool level
+        //   delete_email      -> permanent; trash (a label) is recoverable for 30 days
+        //   batch_delete_emails -> same
+        //   create_filter/*   -> acts silently and outlives the agent
+        'mcp__gmail__modify_email',
+        'mcp__gmail__batch_modify_emails',
+        'mcp__gmail__get_or_create_label',
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
