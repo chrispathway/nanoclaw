@@ -29,7 +29,10 @@ Trash immediately, no notification per item:
 
 - **All DMARC aggregate reports**, from any sender.
 - **Obvious scams and phishing** (fake invoices, lottery or crypto "you won", spoofed or impersonated senders).
-- **Obvious junk outreach**, meaning mass-outreach pitches with no real fit: video and clipping tools sent by outreach agencies, consumer gadget dropshippers (ergonomic or gaming chairs, phone cases, iPad cases, ring lights, projectors), out-of-niche marketplaces, generic AI slop tools with no real product behind them. Named examples of each category are in the rules file.
+- **Obvious junk outreach**, meaning mass-outreach pitches with no real fit: video and clipping tools sent by outreach agencies, consumer gadget dropshippers (gaming chairs, phone cases, iPad cases, ring lights, projectors), out-of-niche marketplaces. Named examples of each category are in the rules file.
+- **Out-of-scope brand outreach:** anything that is not tech, AI, coding, education, productivity or smart home related in any way. Examples: fashion, beauty, food delivery, health supplements, travel deals, non-smart kitchen or cleaning appliances, gaming peripherals unrelated to productivity. Trash these silently and list them in the sweep message.
+
+Generic or small AI tools are NOT junk anymore. They are a fit and usually get the TikTok rate card (Template B), see Collaboration Request Handling.
 
 **Never trash:** anything from a current or recent partner, anything touching a contract, invoice or payment, and anything you are unsure about. When in doubt, leave it in the inbox. A wrongly trashed brand email costs far more than a junk email left sitting.
 
@@ -118,27 +121,29 @@ Never surface: DMARC, spam, newsletters (including the platform named in the rul
 
 ### Collaboration Request Handling
 
-**Niche fit** (draft a reply automatically): AI tools, coding agents, developer tools, productivity tools, study tools, note-taking apps, learning platforms, tech hardware, home office hardware (desks, chairs, ergonomic gear), finance/investing apps — anything a developer, student, or builder would use.
+**Niche fit** (draft a reply automatically): AI tools (including small or generic ones), AI video and image generators, coding agents, developer tools, productivity tools, study tools, note-taking apps, education and learning platforms, tech hardware, smart home devices (including robot vacuums), home office hardware (desks, chairs, ergonomic gear), finance/investing apps. Anything a developer, student or builder would use.
 
-**Big or established brands are always a fit** — regardless of product category. If the sender is a well-known, major brand (a household name or large company), draft a reply even if the product would otherwise fall under "not a fit".
+**Big or established brands are always a fit**, regardless of product category. If the sender is a well-known, major brand (a household name or large company), draft a Template A reply even if the product would otherwise be out of scope.
 
-**Not a fit** (inform only, no draft): fashion, beauty, food delivery, home appliances (kitchen/cleaning — note: home-office desks and chairs ARE a fit, see above), cleaning robots, gaming peripherals unrelated to productivity, out-of-niche marketplaces (examples in the rules file), health supplements, travel deals.
+**Out of scope** (trash silently, see Auto-Trash): anything not tech, AI, coding, education, productivity or smart home related, e.g. fashion, beauty, food delivery, health supplements, travel deals, non-smart kitchen or cleaning appliances, gaming peripherals unrelated to productivity, out-of-niche marketplaces.
 
 Outreaches that come in through Instagram or TikTok DMs (which Christian may paste in) are handled exactly the same way as email: same fit rules, and the same standard template for the first reply.
 
-When it's a fit, draft the reply using the exact outreach template in the rules file. Fill in the `{…}` placeholders with the specific company/product info from the email.
+When it's a fit, first decide which template to use. The rules file has two: **Template A** (Instagram rate card) for big or established brands and current or recent partners, and **Template B** (TikTok-only rate card) for small or unknown brands. You make this call yourself, there is no fixed list; the criteria are in the rules file. If unsure, use Template B and say in your Telegram message which template you picked and why, so Christian can switch it. Never offer Instagram packages to a Template B brand.
+
+Then draft the reply using the exact chosen template from the rules file. Fill in the `{…}` placeholders with the specific company/product info from the email.
 
 > ⚠️ **SINGLE SOURCE OF TRUTH.** Rebuild **every** draft from the template in the rules file. Do **not** copy profile numbers, package text, or prices from `conversations/` history or any past draft — those are outdated. Use `conversations/` only to recall deal *status and context* (who is negotiating, what was already declined) — never to source stats or pricing.
 
 For every inbound email that is a fit, always do both: (1) draft the first reply from the outreach template in the rules file, and (2) mark the original email as unread again afterwards, so it stays in Christian's overview.
 
-After creating the draft, tell Christian: which email it was for, that the draft is ready, and ask if he wants any changes before sending.
+After creating the draft, tell Christian: which email it was for, which template you used (A or B), that the draft is ready, and ask if he wants any changes before sending.
 
 Create the draft with `mcp__nanoclaw__create_email_draft`, passing the `thread_id` of the email you are answering, so the draft sits inside that thread.
 
 ### Negotiation & Pricing Strategy
 
-The list prices are an opening offer, intentional anchoring, since brands rarely accept the first number. The floors, the anchoring logic and the value arguments to lead with when a brand pushes below the floor are all in the rules file. Read them before putting any number into a draft.
+The list prices are an opening offer, intentional anchoring, since brands rarely accept the first number. Template A and Template B have separate floors. The floors, the anchoring logic and the value arguments to lead with when a brand pushes below the floor are all in the rules file. Read them before putting any number into a draft.
 
 **Never put a number below the floor into a draft on your own.** If a brand pushes under it, surface their offer to Christian and ask before replying.
 
@@ -155,7 +160,7 @@ The component prices to build that breakdown from are in the rules file, along w
 
 ### Deal Log
 
-Whenever you create a collaboration draft, append a row to `deals.md` in your workspace: date, company, product, package quoted, price, status. Update the status as a deal moves (replied / negotiating / closed / declined). This is Christian's pipeline view — keep it current.
+Whenever you create a collaboration draft, append a row to `deals.md` in your workspace: date, company, product, template (A or B), package quoted, price, status. Update the status as a deal moves (replied / negotiating / closed / declined). This is Christian's pipeline view — keep it current.
 
 ### Follow-Ups
 
